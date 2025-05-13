@@ -42,11 +42,12 @@ def get_dummies(df, columns):
     return pd.get_dummies(df, columns=columns, dtype=int)
 
 
-def process_variable_name(var_name):
+def process_variable_name(var_name, lang="ja"):
     """変数名を処理するための関数
 
     Args:
         var_name (str): 変数名
+        lang (str): 言語コード ("ja", "en", "zh")
 
     Returns:
         dict:
@@ -57,13 +58,32 @@ def process_variable_name(var_name):
             "type": 変数のタイプ
             "exponent": 'exponent'タイプの場合の exponent
     """
+    # 言語ごとのラベル定義
+    labels = {
+        "ja": {
+            "log_suffix": "の対数",
+            "power_suffix": "の {power} 乗",
+            "intersection_suffix": "×",
+        },
+        "en": {
+            "log_suffix": " (log)",
+            "power_suffix": "^{power}",
+            "intersection_suffix": " × ",
+        },
+        "zh": {
+            "log_suffix": "的对数",
+            "power_suffix": "的{power}次方",
+            "intersection_suffix": "×",
+        },
+    }
+
     if ":" in var_name and not var_name.startswith(":") and not var_name.endswith(":"):
         var1, var2 = var_name.split(":")
         if ":" in var1 or ":" in var2:
             raise TypeError("var1 or var2 has :")
 
-        parsed1 = process_variable_name(var1)
-        parsed2 = process_variable_name(var2)
+        parsed1 = process_variable_name(var1, lang)
+        parsed2 = process_variable_name(var2, lang)
         if not isinstance(parsed1, dict) or not isinstance(parsed2, dict):
             raise TypeError("parsed1 or parsed2 is not dict")
 
@@ -71,7 +91,7 @@ def process_variable_name(var_name):
             "raw": var_name,
             "core": [parsed1["core"], parsed2["core"]],
             "formula": f"{parsed1['formula']}:{parsed2['formula']}",
-            "label": f"{parsed1['label']}×{parsed2['label']}",
+            "label": f"{parsed1['label']}{labels[lang]['intersection_suffix']}{parsed2['label']}",
             "details": [parsed1, parsed2],
             "type": "intersection",
         }
@@ -81,7 +101,7 @@ def process_variable_name(var_name):
             "raw": var_name,
             "core": variable_core,
             "formula": f'np.log(Q("{variable_core}"))',
-            "label": f"{variable_core}の対数",
+            "label": f"{variable_core}{labels[lang]['log_suffix']}",
             "type": "log",
         }
     elif var_name[0:-1].endswith("**"):
@@ -90,7 +110,7 @@ def process_variable_name(var_name):
             "raw": var_name,
             "core": variable_core,
             "formula": f'np.power(Q("{variable_core}"), {exponent})',
-            "label": f"{variable_core}の {exponent} 乗",
+            "label": f"{variable_core}{labels[lang]['power_suffix'].format(power=exponent)}",
             "exponent": int(exponent),
             "type": "power",
         }
@@ -158,7 +178,57 @@ def regression(variables_dicts, df, decimal_places=2):
 
         df (DataFrame): データ
         decimal_places (int): 小数以下何位まで保留かを表す数値
+
+    Returns:
+        tuple: (処理済みデータフレーム, 記述統計量, 回帰結果テーブル)
     """
+    # 有効なキーの定義
+    valid_keys = {
+        "dependent": ["被説明変数", "y", "被解释变量"],
+        "independent": ["説明変数", "X", "解释变量"],
+    }
+
+    # 言語ごとのラベル定義
+    labels = {
+        "ja": {
+            "nobs": "観測数",
+            "intercept": "定数項",
+            "r_squared": "決定係数",
+            "r_squared_adj": "自由度修正済み決定係数",
+            "log_suffix": "の対数",
+            "power_suffix": "の {power} 乗",
+            "intersection_suffix": "×",
+        },
+        "en": {
+            "nobs": "N",
+            "intercept": "Constant",
+            "r_squared": "R-squared",
+            "r_squared_adj": "Adj. R-squared",
+            "log_suffix": " (log)",
+            "power_suffix": "^{power}",
+            "intersection_suffix": " × ",
+        },
+        "zh": {
+            "nobs": "样本数",
+            "intercept": "常数项",
+            "r_squared": "决定系数",
+            "r_squared_adj": "调整后决定系数",
+            "log_suffix": "的对数",
+            "power_suffix": "的{power}次方",
+            "intersection_suffix": "×",
+        },
+    }
+
+    # 入力されたキーから言語を判定
+    def detect_language(key):
+        if key in ["被説明変数", "説明変数"]:
+            return "ja"
+        elif key in ["y", "X"]:
+            return "en"
+        elif key in ["被解释变量", "解释变量"]:
+            return "zh"
+        return "ja"  # デフォルトは日本語
+
     models = []
     model_names = []
     exp_list = []
@@ -166,7 +236,28 @@ def regression(variables_dicts, df, decimal_places=2):
 
     # 回帰式の構築
     for i, var_dict in enumerate(variables_dicts):
-        dep_var = process_variable_name(var_dict["被説明変数"])
+        # 被説明変数のキーを取得
+        dep_key = next(
+            (key for key in valid_keys["dependent"] if key in var_dict), None
+        )
+        if dep_key is None:
+            raise KeyError(
+                f"被説明変数のキーが見つかりません。有効なキー: {valid_keys['dependent']}"
+            )
+
+        # 説明変数のキーを取得
+        exp_key = next(
+            (key for key in valid_keys["independent"] if key in var_dict), None
+        )
+        if exp_key is None:
+            raise KeyError(
+                f"説明変数のキーが見つかりません。有効なキー: {valid_keys['independent']}"
+            )
+
+        # 言語の判定
+        lang = detect_language(dep_key)
+
+        dep_var = process_variable_name(var_dict[dep_key], lang)
         model_names.append(f"（{i+1}）\n{dep_var['label']}")
         formula = "{} ~ 1".format(dep_var["formula"])
 
@@ -174,8 +265,8 @@ def regression(variables_dicts, df, decimal_places=2):
         if not any(item["raw"] == dep_var["raw"] for item in dep_list):
             dep_list.append(dep_var)
 
-        for var in var_dict["説明変数"]:
-            exp_var = process_variable_name(var)
+        for var in var_dict[exp_key]:
+            exp_var = process_variable_name(var, lang)
             formula += " + {}".format(exp_var["formula"])
 
             # log(X), X**2, X を異なるアイテムとして識別するために、"raw" を使う
@@ -194,7 +285,7 @@ def regression(variables_dicts, df, decimal_places=2):
         regressor_order=regressor_order,
         float_format=f"%.{decimal_places}f",
         model_names=model_names,
-        info_dict={"観測数": lambda x: str(int(x.nobs))},
+        info_dict={labels[lang]["nobs"]: lambda x: str(int(x.nobs))},
         stars=True,
     ).tables[0]
 
@@ -203,9 +294,9 @@ def regression(variables_dicts, df, decimal_places=2):
 
     rename_dict.update(
         {
-            "Intercept": "定数項",
-            "R-squared": "決定係数",
-            "R-squared Adj.": "自由度修正済み決定係数",
+            "Intercept": labels[lang]["intercept"],
+            "R-squared": labels[lang]["r_squared"],
+            "R-squared Adj.": labels[lang]["r_squared_adj"],
         }
     )
     df_result = df_result.rename(index=rename_dict)
@@ -233,7 +324,8 @@ def regression(variables_dicts, df, decimal_places=2):
             used_var_list.append(var["label"])
         elif var["type"] == "intersection":
             var1, var2 = var["core"]
-
+            df_coppied[var["label"]] = df_coppied[var1] * df_coppied[var2]
+            used_var_list.append(var["label"])
         else:
             used_var_list.append(var["label"])
 

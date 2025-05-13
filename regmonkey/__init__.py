@@ -1,3 +1,3 @@
-from .stats import add_footer, summary, regression
+from .stats import add_footer, get_dummies, summary, regression
 
-__all__ = ["add_footer", "summary", "regression"]
+__all__ = ["add_footer", "get_dummies", "summary", "regression"]
