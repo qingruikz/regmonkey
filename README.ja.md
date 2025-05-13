@@ -13,6 +13,8 @@
 - 📄 **Excel フッター注釈**: Excel ファイルに自動的に注釈を追加します。
 - 🌐 **多言語対応**: 日本語、英語、中国語で変数を指定でき、入力キーに応じて自動的に言語を検出し、一貫した形式で結果を出力します。
 
+![](https://raw.githubusercontent.com/qingruikz/regmonkey/main/assets/example.png)
+
 ## インストール
 
 ```bash

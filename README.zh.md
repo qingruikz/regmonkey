@@ -13,6 +13,8 @@
 - 📄 **Excel 页脚注释**: 自动向 Excel 文件添加注释。
 - 🌐 **多语言支持**: 支持使用日语、英语或中文指定变量，自动检测语言并提供一致的结果输出格式。
 
+![](https://raw.githubusercontent.com/qingruikz/regmonkey/main/assets/example.png)
+
 ## 安装
 
 ```bash

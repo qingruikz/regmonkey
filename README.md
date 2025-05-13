@@ -13,6 +13,8 @@
 - 📄 **Excel Footer Annotation**: Add footnotes to Excel files automatically.
 - 🌐 **Multilingual Support**: Specify variables and get results in English, Japanese, or Chinese, with automatic language detection and consistent output formatting.
 
+![](https://raw.githubusercontent.com/qingruikz/regmonkey/main/assets/example.png)
+
 ## Installation
 
 ```bash
