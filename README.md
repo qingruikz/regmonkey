@@ -11,7 +11,7 @@
 - 📦 **Dummy Variable Creation**: Quickly convert categorical variables into dummy/indicator variables.
 - 📈 **Regression Analysis**: Run multiple linear regressions with support for log, power, and interaction terms, and export well-formatted result tables.
 - 📄 **Excel Footer Annotation**: Add footnotes to Excel files automatically.
-- 🌐 **Multilingual Support**: Specify variables and get results in English, Japanese, or Chinese, with automatic language detection and consistent output formatting.
+- 🌐 **Multilingual Support**: Specify variables in any supported language (English, Japanese, or Chinese) and control output language independently using the `lang` parameter for consistent formatting across all results.
 
 ![](https://raw.githubusercontent.com/qingruikz/regmonkey/main/assets/example.png)
 
@@ -69,33 +69,44 @@ print(dummies)
 
 ---
 
-### `summary(df, var_list)`
+### `summary(df, var_list, round_digits=2, lang="ja")`
 
-Generates descriptive statistics for a list of variables.
+Calculates descriptive statistics for the specified variables.
 
-**Arguments**:
+- `df`: DataFrame containing the data
+- `var_list`: List of variable names
+- `round_digits`: Number of decimal places (default: 2)
+- `lang`: Language code ("ja", "en", "zh") for output labels (default: "ja")
 
-- `df` (DataFrame): The input DataFrame.
-- `var_list` (list of str): List of variable names to summarize.
+**Note**: By default (when `lang` is not specified), the output will be in Japanese.
 
-**Returns**:
+Returns a DataFrame with the following statistics:
 
-- A DataFrame containing descriptive statistics.
+- N (Sample size)
+- Mean
+- Std. Dev. (Standard deviation)
+- Min (Minimum value)
+- Max (Maximum value)
 
-**Example**:
+Example:
 
 ```python
-from regmonkey.stats import summary
-import pandas as pd
+# Default (Japanese labels)
+summary_stats = summary(df, ["X1", "X2"])
 
-data = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
-stats = summary(data, ["A", "B"])
-print(stats)
+# English labels
+summary_stats = summary(df, ["X1", "X2"], lang="en")
+
+# Japanese labels
+summary_stats = summary(df, ["X1", "X2"], lang="ja")
+
+# Chinese labels
+summary_stats = summary(df, ["X1", "X2"], lang="zh")
 ```
 
 ---
 
-### `regression(variables_dicts, df, decimal_places=2)`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja")`
 
 Performs regression analysis with support for log, power, and interaction terms.
 
@@ -112,6 +123,9 @@ Performs regression analysis with support for log, power, and interaction terms.
   - **Interaction terms**: Use `X1:X2` for the interaction between `X1` and `X2`, or combine transformations like `X1**2:log(X2)`.
 - `df` (DataFrame): The input data.
 - `decimal_places` (int): Number of decimal places for results.
+- `lang` (str): Language code ("ja", "en", "zh") for output labels (default: "ja")
+
+**Note**: By default (when `lang` is not specified), the output will be in Japanese.
 
 **Returns**:
 
@@ -152,8 +166,17 @@ variables_zh = [
     {"被解释变量": "Y", "解释变量": ["X1", "X2", "log(X1)", "X2**2", "X1:X2"]}
 ]
 
-# Perform regression (using any of the above variable definitions)
-df_processed, summary_result, regression_result = regression(variables_ja, data_with_dummies)
+# Perform regression with default output (Japanese)
+df_processed, summary_result, regression_result = regress(variables_ja, data_with_dummies)
+
+# Perform regression with Japanese output
+df_processed, summary_result, regression_result = regress(variables_ja, data_with_dummies, lang="ja")
+
+# Perform regression with English output
+df_processed, summary_result, regression_result = regress(variables_en, data_with_dummies, lang="en")
+
+# Perform regression with Chinese output
+df_processed, summary_result, regression_result = regress(variables_zh, data_with_dummies, lang="zh")
 
 # Print results
 print(regression_result)
@@ -162,11 +185,12 @@ print(regression_result)
 In this example:
 
 - The regression can be specified using any of the supported languages (Japanese, English, or Chinese).
+- The output language is determined by the `lang` parameter, not by the input keys.
 - `log(X1)` computes the natural logarithm of `X1`.
 - `X2**2` computes the square of `X2`.
 - `X1:X2` computes the interaction between `X1` and `X2`.
 - Dummy variables for `Category` are automatically created using `get_dummies`.
-- The output labels (e.g., "観測数"/"N"/"样本数") will automatically match the language of the input keys.
+- The output labels (e.g., "観測数"/"N"/"样本数") will match the language specified by the `lang` parameter.
 
 ---
 
@@ -174,7 +198,7 @@ In this example:
 
 ```python
 import pandas as pd
-from regmonkey.stats import get_dummies, regression, add_footer
+from regmonkey.stats import get_dummies, regress, add_footer
 
 # Load data
 data = pd.DataFrame({
@@ -191,7 +215,7 @@ data_with_dummies = get_dummies(data, columns=["Category"])
 variables = [
     {"y": "Y", "X": ["X1", "X2", "log(X1)", "X2**2", "X1:X2"]}
 ]
-df_processed, summary_result, regression_result = regression(variables, data_with_dummies)
+df_processed, summary_result, regression_result = regress(variables, data_with_dummies, lang="en")
 
 # Save regression results to Excel and add a footer
 regression_result.to_excel("regression_results.xlsx", index=False)

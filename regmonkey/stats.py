@@ -124,31 +124,50 @@ def process_variable_name(var_name, lang="ja"):
         }
 
 
-def summary(df, var_list):
+def summary(df, var_list, round_digits=2, lang="ja"):
     """記述統計量を出力するための関数
 
     Args:
         df (DataFrame): データ
         var_list (str[]): 変数名リスト
+        round_digits (int, optional): 小数点以下の桁数. Defaults to 2.
+        lang (str, optional): 言語コード ("ja", "en", "zh"). Defaults to "ja".
 
     Returns:
         DataFrame: 記述統計量
     """
+    # 言語ごとのラベル定義
+    labels = {
+        "ja": {
+            "count": "観測数",
+            "mean": "平均値",
+            "std": "標準偏差",
+            "min": "最小値",
+            "max": "最大値",
+        },
+        "en": {
+            "count": "N",
+            "mean": "Mean",
+            "std": "Std. Dev.",
+            "min": "Min",
+            "max": "Max",
+        },
+        "zh": {
+            "count": "样本数",
+            "mean": "平均值",
+            "std": "标准差",
+            "min": "最小值",
+            "max": "最大值",
+        },
+    }
+
     return (
         df[var_list]
         .describe()
-        .round(2)
+        .round(round_digits)
         .loc[["count", "mean", "std", "min", "max"]]
         .transpose()
-        .rename(
-            columns={
-                "count": "観測数",
-                "mean": "平均値",
-                "std": "標準偏差",
-                "min": "最小値",
-                "max": "最大値",
-            }
-        )
+        .rename(columns=labels[lang])
     )
 
 
@@ -164,7 +183,7 @@ def add_if_unique(var, unique_vars):
         unique_vars.append(var)
 
 
-def regression(variables_dicts, df, decimal_places=2):
+def regress(variables_dicts, df, decimal_places=2, lang="ja"):
     """回帰分析を行うための関数
 
     Args:
@@ -178,6 +197,7 @@ def regression(variables_dicts, df, decimal_places=2):
 
         df (DataFrame): データ
         decimal_places (int): 小数以下何位まで保留かを表す数値
+        lang (str): 言語コード ("ja", "en", "zh")（デフォルト: "ja"）
 
     Returns:
         tuple: (処理済みデータフレーム, 記述統計量, 回帰結果テーブル)
@@ -219,16 +239,6 @@ def regression(variables_dicts, df, decimal_places=2):
         },
     }
 
-    # 入力されたキーから言語を判定
-    def detect_language(key):
-        if key in ["被説明変数", "説明変数"]:
-            return "ja"
-        elif key in ["y", "X"]:
-            return "en"
-        elif key in ["被解释变量", "解释变量"]:
-            return "zh"
-        return "ja"  # デフォルトは日本語
-
     models = []
     model_names = []
     exp_list = []
@@ -253,9 +263,6 @@ def regression(variables_dicts, df, decimal_places=2):
             raise KeyError(
                 f"説明変数のキーが見つかりません。有効なキー: {valid_keys['independent']}"
             )
-
-        # 言語の判定
-        lang = detect_language(dep_key)
 
         dep_var = process_variable_name(var_dict[dep_key], lang)
         model_names.append(f"（{i+1}）\n{dep_var['label']}")
@@ -330,6 +337,8 @@ def regression(variables_dicts, df, decimal_places=2):
             used_var_list.append(var["label"])
 
     # 記述統計量
-    summary_result = summary(df_coppied, used_var_list)
+    summary_result = summary(
+        df_coppied, used_var_list, round_digits=decimal_places, lang=lang
+    )
 
     return (df_coppied, summary_result, df_result)
