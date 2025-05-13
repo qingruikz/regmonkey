@@ -1,0 +1,44 @@
+# Python関連
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+
+# 仮想環境（任意。例えばvenvやenvという名前で作った場合）
+venv/
+env/
+.venv/
+.env/
+
+# Jupyter Notebookのチェックポイント（使っていれば）
+.ipynb_checkpoints/
+
+# ビルド・配布関連
+build/
+dist/
+*.whl
+*.tar.gz
+
+# テスト関連
+.coverage
+.cache/
+.tox/
+pytest_cache/
+
+# エディタやOSごとのファイル
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# dotenvファイル（必要に応じて）
+.env
+.env.*
+
+# mypy等の型チェックキャッシュ
+.mypy_cache/
+.pytype/
