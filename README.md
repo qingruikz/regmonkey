@@ -106,7 +106,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 
 ---
 
-### `regress(variables_dicts, df, decimal_places=2, lang="ja")`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1")`
 
 Performs regression analysis with support for log, power, and interaction terms.
 
@@ -124,6 +124,12 @@ Performs regression analysis with support for log, power, and interaction terms.
 - `df` (DataFrame): The input data.
 - `decimal_places` (int): Number of decimal places for results.
 - `lang` (str): Language code ("ja", "en", "zh") for output labels (default: "ja")
+- `cov_type` (str): Type of standard error calculation (default: "HC1")
+  - "HC1": White's standard errors with small sample correction
+  - "HC0": White's standard errors
+  - "HC2": MacKinnon's standard errors
+  - "HC3": Davidson-MacKinnon's standard errors
+  - "nonrobust": Conventional standard errors
 
 **Note**: By default (when `lang` is not specified), the output will be in Japanese.
 

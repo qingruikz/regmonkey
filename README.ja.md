@@ -106,7 +106,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 
 ---
 
-### `regress(variables_dicts, df, decimal_places=2, lang="ja")`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1")`
 
 対数、べき乗、交互作用項をサポートする回帰分析を実行します。
 
@@ -124,6 +124,12 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 - `df` (DataFrame)：入力データ。
 - `decimal_places` (int)：結果の小数点以下の桁数。
 - `lang` (str)：出力ラベルの言語コード（"ja"、"en"、"zh"）（デフォルト："ja"）
+- `cov_type` (str)：標準誤差の計算方法（デフォルト："HC1"）
+  - "HC1"：ホワイトの標準誤差（小標本補正付き）
+  - "HC0"：ホワイトの標準誤差
+  - "HC2"：マックイナンの標準誤差
+  - "HC3"：デビッドソン・マックキノンの標準誤差
+  - "nonrobust"：通常の標準誤差
 
 **注意**：デフォルト（`lang` が指定されていない場合）では、出力は日本語になります。
 

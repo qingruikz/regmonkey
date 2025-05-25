@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "regmonkey"
-version = "0.1.2"
+version = "0.1.3"
 description = "A smart and lightweight toolkit for regression modeling, statistical summaries, and Excel annotations."
 readme = "README.md"
 license = {text = "MIT"}

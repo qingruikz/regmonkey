@@ -183,7 +183,7 @@ def add_if_unique(var, unique_vars):
         unique_vars.append(var)
 
 
-def regress(variables_dicts, df, decimal_places=2, lang="ja"):
+def regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1"):
     """回帰分析を行うための関数
 
     Args:
@@ -198,6 +198,12 @@ def regress(variables_dicts, df, decimal_places=2, lang="ja"):
         df (DataFrame): データ
         decimal_places (int): 小数以下何位まで保留かを表す数値
         lang (str): 言語コード ("ja", "en", "zh")（デフォルト: "ja"）
+        cov_type (str): 標準誤差の計算方法（デフォルト: "HC1"）
+            - "HC1": ホワイトの標準誤差（小標本補正付き）
+            - "HC0": ホワイトの標準誤差
+            - "HC2": マックイナンの標準誤差
+            - "HC3": デビッドソン・マックキノンの標準誤差
+            - "nonrobust": 通常の標準誤差
 
     Returns:
         tuple: (処理済みデータフレーム, 記述統計量, 回帰結果テーブル)
@@ -280,7 +286,7 @@ def regress(variables_dicts, df, decimal_places=2, lang="ja"):
             if not any(item["raw"] == exp_var["raw"] for item in exp_list):
                 exp_list.append(exp_var)
 
-        model = smf.ols(formula=formula, data=df).fit(cov_type="HC1")
+        model = smf.ols(formula=formula, data=df).fit(cov_type=cov_type)
         models.append(model)
 
     # 説明変数の並び替え

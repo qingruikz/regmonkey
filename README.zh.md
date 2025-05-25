@@ -106,7 +106,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 
 ---
 
-### `regress(variables_dicts, df, decimal_places=2, lang="ja")`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1")`
 
 执行支持对数、幂和交互项的回归分析。
 
@@ -124,6 +124,12 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 - `df` (DataFrame)：输入数据。
 - `decimal_places` (int)：结果的小数位数。
 - `lang` (str)：输出标签的语言代码（"ja"、"en"、"zh"）（默认："ja"）
+- `cov_type` (str)：标准误差的计算方法（默认："HC1"）
+  - "HC1"：怀特标准误差（带小样本修正）
+  - "HC0"：怀特标准误差
+  - "HC2"：麦金农标准误差
+  - "HC3"：戴维森-麦金农标准误差
+  - "nonrobust"：常规标准误差
 
 **注意**：默认情况下（未指定 `lang` 时），输出将为日语。
 
