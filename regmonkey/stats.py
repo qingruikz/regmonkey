@@ -3,6 +3,7 @@ import openpyxl
 import statsmodels.formula.api as smf
 import numpy as np
 import pandas as pd
+import re
 
 # 推定結果のスタイルを変更するためのモジュール
 from statsmodels.iolib.summary2 import summary_col
@@ -348,3 +349,171 @@ def regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1"):
     )
 
     return (df_coppied, summary_result, df_result)
+
+
+def interpret_result(df_result, lang="ja"):
+    """推定結果を解釈するための関数
+
+    Args:
+        df_result (DataFrame): regress関数から返される推定結果テーブル
+        lang (str, optional): 言語コード ("ja", "en", "zh"). Defaults to "ja".
+
+    Returns:
+        str: 推定結果の解釈を表す文字列
+    """
+    # 言語ごとのラベル定義
+    labels = {
+        "ja": {
+            "r_squared_adj": "自由度修正済み決定係数",
+            "r_squared": "決定係数",
+            "nobs": "観測数",
+            "intercept": "定数項",
+            "significant_1pct": "1％の有意水準で有意に推定されている",
+            "significant_5pct": "5％の有意水準で有意に推定されている",
+            "significant_10pct": "10％の有意水準で有意に推定されている",
+            "not_significant": "10％の有意水準でも有意に推定されていない",
+            "coefficient": "の係数の推定値は",
+            "model": "モデル",
+            "regressed": "では",
+            "on": "を",
+            "with": "に回帰した",
+        },
+        "en": {
+            "r_squared_adj": "Adjusted R-squared",
+            "r_squared": "R-squared",
+            "nobs": "N",
+            "intercept": "Constant",
+            "significant_1pct": "is significant at the 1% level",
+            "significant_5pct": "is significant at the 5% level",
+            "significant_10pct": "is significant at the 10% level",
+            "not_significant": "is not significant even at the 10% level",
+            "coefficient": "coefficient is",
+            "model": "Model",
+            "regressed": "",
+            "on": "",
+            "with": "regressed",
+        },
+        "zh": {
+            "r_squared_adj": "调整后决定系数",
+            "r_squared": "决定系数",
+            "nobs": "样本数",
+            "intercept": "常数项",
+            "significant_1pct": "在1%的显著性水平下显著",
+            "significant_5pct": "在5%的显著性水平下显著",
+            "significant_10pct": "在10%的显著性水平下显著",
+            "not_significant": "即使在10%的显著性水平下也不显著",
+            "coefficient": "的系数估计值为",
+            "model": "模型",
+            "regressed": "",
+            "on": "",
+            "with": "回归",
+        },
+    }
+
+    result_texts = []
+
+    # 定数項の行名
+    intercept_row = labels[lang]["intercept"]
+
+    # 統計情報の行名
+    stat_rows = [
+        labels[lang]["r_squared_adj"],
+        labels[lang]["r_squared"],
+        labels[lang]["nobs"],
+    ]
+
+    # 候補となる説明変数（統計情報、定数項、標準誤差の行を除く）
+    candidate_vars = []
+    for idx in df_result.index:
+        if idx in stat_rows:
+            continue
+        if idx == intercept_row:
+            continue
+        if pd.isna(idx) or idx.strip() == "":
+            # 標準誤差の行
+            continue
+        candidate_vars.append(idx)
+
+    # 各モデル（列）について処理
+    for col_idx, col_name in enumerate(df_result.columns):
+        # モデル名と被説明変数を抽出（例: "（1）\nY" -> "（1）", "Y"）
+        if "\n" in col_name:
+            parts = col_name.split("\n", 1)
+            model_name = parts[0]  # "（1）"をそのまま使用
+            dep_var = parts[1]
+        else:
+            dep_var = col_name
+            # フォールバック: 列インデックスを使用
+            model_name = f"（{col_idx + 1}）"
+
+        # ここで各モデル列に対して実際にデータのある変数だけを抽出する
+        used_vars = []
+        for var in candidate_vars:
+            cell = df_result.loc[var, col_name]
+            if not pd.isna(cell) and cell.strip() != "":
+                used_vars.append(var)
+
+        # モデルの説明文を生成
+        if lang == "ja":
+            model_desc = f"{labels[lang]['model']}{model_name}{labels[lang]['regressed']}{dep_var}{labels[lang]['on']}{'、'.join(used_vars)}{labels[lang]['with']}。"
+        elif lang == "en":
+            model_desc = f"{labels[lang]['model']} {model_name} {labels[lang]['with']} {dep_var} on {', '.join(used_vars)}."
+        else:  # zh
+            model_desc = f"{labels[lang]['model']}{model_name}将{dep_var}对{'、'.join(used_vars)}进行{labels[lang]['with']}。"
+        result_texts.append(model_desc)
+
+        # 各説明変数について係数と有意性を説明
+        for var_name in used_vars:
+            cell_value = df_result.loc[var_name, col_name]
+
+            # セルの値がNaNの場合はスキップ
+            if pd.isna(cell_value):
+                continue
+
+            # セルの値を文字列に変換
+            cell_str = str(cell_value)
+
+            # 数値とスターを分離
+            # スターの数をカウント
+            star_count = cell_str.count("*")
+            # 数値部分を抽出（スターを除く）
+            numeric_part = cell_str.replace("*", "").strip()
+
+            # 有意性の判定
+            if star_count >= 3:
+                significance = labels[lang]["significant_1pct"]
+            elif star_count == 2:
+                significance = labels[lang]["significant_5pct"]
+            elif star_count == 1:
+                significance = labels[lang]["significant_10pct"]
+            else:
+                significance = labels[lang]["not_significant"]
+
+            # 説明文を生成
+            if lang == "ja":
+                var_desc = f"{var_name}{labels[lang]['coefficient']}{numeric_part}となり、{significance}。"
+            elif lang == "en":
+                var_desc = f"The {var_name} {labels[lang]['coefficient']} {numeric_part}, and {significance}."
+            else:  # zh
+                var_desc = f"{var_name}{labels[lang]['coefficient']}{numeric_part}，{significance}。"
+            result_texts.append(var_desc)
+
+        # 自由度修正済み決定係数を取得
+        adj_r_squared_row = labels[lang]["r_squared_adj"]
+        if adj_r_squared_row in df_result.index:
+            adj_r_squared_value = df_result.loc[adj_r_squared_row, col_name]
+            if not pd.isna(adj_r_squared_value):
+                adj_r_squared_str = str(adj_r_squared_value).replace("*", "").strip()
+                if lang == "ja":
+                    r_squared_desc = f"{labels[lang]['model']}{model_name}の{adj_r_squared_row}は{adj_r_squared_str}である。"
+                elif lang == "en":
+                    r_squared_desc = f"The {adj_r_squared_row} of {labels[lang]['model']} {model_name} is {adj_r_squared_str}."
+                else:  # zh
+                    r_squared_desc = f"{labels[lang]['model']}{model_name}的{adj_r_squared_row}为{adj_r_squared_str}。"
+                result_texts.append(r_squared_desc)
+
+        # モデル間に空行を追加
+        if col_idx < len(df_result.columns) - 1:
+            result_texts.append("")
+
+    return "\n".join(result_texts)

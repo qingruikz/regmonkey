@@ -200,18 +200,85 @@ In this example:
 
 ---
 
+### `interpret_result(df_result, lang="ja")`
+
+Interprets regression results and generates a human-readable text description.
+
+**Arguments**:
+
+- `df_result` (DataFrame): The regression results table returned by the `regress` function.
+- `lang` (str, optional): Language code ("ja", "en", "zh") for output text (default: "ja")
+
+**Returns**:
+
+- A string containing an interpretation of the regression results, including:
+  - Model description (dependent variable regressed on independent variables)
+  - Coefficient estimates and significance levels for each variable
+  - Adjusted R-squared for each model
+
+**Note**: By default (when `lang` is not specified), the output will be in Japanese.
+
+**Example**:
+
+```python
+from regmonkey.stats import regress, interpret_result
+import pandas as pd
+
+# Sample data
+data = pd.DataFrame({
+    "X1": [1, 2, 3, 4, 5],
+    "X2": [2, 3, 4, 5, 6],
+    "Y": [3, 5, 7, 9, 11]
+})
+
+# Perform regression
+variables = [
+    {"y": "Y", "X": ["X1", "X2"]}
+]
+df_processed, summary_result, regression_result = regress(variables, data, lang="ja")
+
+# Interpret results
+interpretation = interpret_result(regression_result, lang="ja")
+print(interpretation)
+```
+
+The output will be in Japanese (default):
+
+```
+モデル（1）ではYをX1、X2に回帰した。
+X1の係数の推定値は1.00となり、10％の有意水準でも有意に推定されていない。
+X2の係数の推定値は1.00となり、10％の有意水準でも有意に推定されていない。
+モデル（1）の自由度修正済み決定係数は0.50である。
+```
+
+For English output:
+
+```python
+interpretation = interpret_result(regression_result, lang="en")
+print(interpretation)
+```
+
+For Chinese output:
+
+```python
+interpretation = interpret_result(regression_result, lang="zh")
+print(interpretation)
+```
+
+---
+
 ## Usage Example
 
 ```python
 import pandas as pd
-from regmonkey.stats import get_dummies, regress, add_footer
+from regmonkey.stats import get_dummies, regress, interpret_result, add_footer
 
 # Load data
 data = pd.DataFrame({
-    "X1": [1, 2, 3],
-    "X2": [4, 5, 6],
-    "Y": [7, 8, 9],
-    "Category": ["A", "B", "A"]
+    "X1": [1, 2, 3, 4, 5],
+    "X2": [2, 3, 4, 5, 6],
+    "Y": [3, 5, 7, 9, 11],
+    "Category": ["A", "B", "A", "B", "A"]
 })
 
 # Create dummy variables
@@ -219,15 +286,26 @@ data_with_dummies = get_dummies(data, columns=["Category"])
 
 # Perform regression with log, power, and interaction terms (using English keys)
 variables = [
-    {"y": "Y", "X": ["X1", "X2", "log(X1)", "X2**2", "X1:X2"]}
+    {"y": "Y", "X": ["X1", "X2"]},
+    {"y": "Y", "X": ["X1", "X2", "log(X1)", "X2**2"]}
 ]
 df_processed, summary_result, regression_result = regress(variables, data_with_dummies, lang="en")
 
+# Interpret regression results
+interpretation = interpret_result(regression_result, lang="en")
+print(interpretation)
+
 # Save regression results to Excel and add a footer
-regression_result.to_excel("regression_results.xlsx", index=False)
+regression_result.to_excel("regression_results.xlsx", index=True)
 add_footer("regression_results.xlsx", "Note: Regression results include log, power, and interaction terms.")
 
 # Save summary statistics to Excel and add a footer
-summary_result.to_excel("summary_statistics.xlsx", index=False)
+summary_result.to_excel("summary_statistics.xlsx", index=True)
 add_footer("summary_statistics.xlsx", "Note: Summary statistics for all variables used in the regression analysis.")
+
+# Save interpretation to a text file
+with open("interpretation.txt", "w", encoding="utf-8") as f:
+    f.write(interpretation)
 ```
+
+For a more comprehensive example, see `example.py` in `examples` folder.

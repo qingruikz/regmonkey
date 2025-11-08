@@ -43,3 +43,6 @@ Thumbs.db
 # mypy等の型チェックキャッシュ
 .mypy_cache/
 .pytype/
+
+# example notebooks
+examples/example.ipynb

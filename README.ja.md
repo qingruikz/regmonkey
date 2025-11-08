@@ -190,34 +190,112 @@ print(regression_result)
 
 ---
 
+### `interpret_result(df_result, lang="ja")`
+
+推定結果を解釈し、人間が読みやすいテキスト形式の説明を生成します。
+
+**引数**：
+
+- `df_result` (DataFrame)：`regress`関数から返される回帰結果テーブル
+- `lang` (str, オプション)：出力テキストの言語コード（"ja"、"en"、"zh"）（デフォルト："ja"）
+
+**戻り値**：
+
+- 回帰結果の解釈を含む文字列。以下の内容を含みます：
+  - モデルの説明（被説明変数を説明変数に回帰）
+  - 各変数の係数の推定値と有意水準
+  - 各モデルの自由度修正済み決定係数
+
+**注意**：デフォルト（`lang` が指定されていない場合）では、出力は日本語になります。
+
+**例**：
+
+```python
+from regmonkey.stats import regress, interpret_result
+import pandas as pd
+
+# サンプルデータ
+data = pd.DataFrame({
+    "X1": [1, 2, 3, 4, 5],
+    "X2": [2, 3, 4, 5, 6],
+    "Y": [3, 5, 7, 9, 11]
+})
+
+# 回帰を実行
+variables = [
+    {"被説明変数": "Y", "説明変数": ["X1", "X2"]}
+]
+df_processed, summary_result, regression_result = regress(variables, data, lang="ja")
+
+# 結果を解釈
+interpretation = interpret_result(regression_result, lang="ja")
+print(interpretation)
+```
+
+出力は日本語（デフォルト）になります：
+
+```
+モデル（1）ではYをX1、X2に回帰した。
+X1の係数の推定値は1.00となり、10％の有意水準でも有意に推定されていない。
+X2の係数の推定値は1.00となり、10％の有意水準でも有意に推定されていない。
+モデル（1）の自由度修正済み決定係数は0.50である。
+```
+
+英語出力の場合：
+
+```python
+interpretation = interpret_result(regression_result, lang="en")
+print(interpretation)
+```
+
+中国語出力の場合：
+
+```python
+interpretation = interpret_result(regression_result, lang="zh")
+print(interpretation)
+```
+
+---
+
 ## 使用例
 
 ```python
 import pandas as pd
-from regmonkey.stats import get_dummies, regress, add_footer
+from regmonkey.stats import get_dummies, regress, interpret_result, add_footer
 
 # データの読み込み
 data = pd.DataFrame({
-    "X1": [1, 2, 3],
-    "X2": [4, 5, 6],
-    "Y": [7, 8, 9],
-    "Category": ["A", "B", "A"]
+    "X1": [1, 2, 3, 4, 5],
+    "X2": [2, 3, 4, 5, 6],
+    "Y": [3, 5, 7, 9, 11],
+    "Category": ["A", "B", "A", "B", "A"]
 })
 
 # ダミー変数の作成
 data_with_dummies = get_dummies(data, columns=["Category"])
 
-# 対数、べき乗、交互作用項を含む回帰を実行（英語キーを使用）
+# 回帰分析を実行
 variables = [
-    {"y": "Y", "X": ["X1", "X2", "log(X1)", "X2**2", "X1:X2"]}
+    {"被説明変数": "Y", "説明変数": ["X1", "X2"]},
+    {"被説明変数": "Y", "説明変数": ["X1", "X2", "log(X1)", "X2**2"]}
 ]
-df_processed, summary_result, regression_result = regress(variables, data_with_dummies, lang="en")
+df_processed, summary_result, regression_result = regress(variables, data_with_dummies, lang="ja")
+
+# 推定結果を解釈
+interpretation = interpret_result(regression_result, lang="ja")
+print(interpretation)
 
 # 回帰結果を Excel に保存し、脚注を追加
-regression_result.to_excel("regression_results.xlsx", index=False)
-add_footer("regression_results.xlsx", "注：回帰結果には対数、べき乗、交互作用項が含まれています。")
+regression_result.to_excel("regression_results.xlsx", index=True)
+add_footer("regression_results.xlsx", "注：回帰結果には対数、べき乗、交互作用項が含まれています。標準誤差は括弧内に表示されています。")
 
 # 要約統計量を Excel に保存し、脚注を追加
-summary_result.to_excel("summary_statistics.xlsx", index=False)
+summary_result.to_excel("summary_statistics.xlsx", index=True)
 add_footer("summary_statistics.xlsx", "注：回帰分析で使用したすべての変数の要約統計量。")
+
+# 解釈結果をテキストファイルに保存
+with open("interpretation.txt", "w", encoding="utf-8") as f:
+    f.write(interpretation)
 ```
+
+より詳細な使用例については、`examples` フォルダにある `example.py` を参照してください。

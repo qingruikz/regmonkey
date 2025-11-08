@@ -190,34 +190,112 @@ print(regression_result)
 
 ---
 
+### `interpret_result(df_result, lang="ja")`
+
+解释回归结果并生成人类可读的文本描述。
+
+**参数**：
+
+- `df_result` (DataFrame)：由`regress`函数返回的回归结果表
+- `lang` (str, 可选)：输出文本的语言代码（"ja"、"en"、"zh"）（默认："ja"）
+
+**返回值**：
+
+- 包含回归结果解释的字符串。包括以下内容：
+  - 模型描述（因变量对自变量进行回归）
+  - 每个变量的系数估计值和显著性水平
+  - 每个模型的调整后决定系数
+
+**注意**：默认情况下（未指定`lang`时），输出将为日语。
+
+**示例**：
+
+```python
+from regmonkey.stats import regress, interpret_result
+import pandas as pd
+
+# 样本数据
+data = pd.DataFrame({
+    "X1": [1, 2, 3, 4, 5],
+    "X2": [2, 3, 4, 5, 6],
+    "Y": [3, 5, 7, 9, 11]
+})
+
+# 执行回归
+variables = [
+    {"被解释变量": "Y", "解释变量": ["X1", "X2"]}
+]
+df_processed, summary_result, regression_result = regress(variables, data, lang="ja")
+
+# 解释结果
+interpretation = interpret_result(regression_result, lang="ja")
+print(interpretation)
+```
+
+输出将为日语（默认）：
+
+```
+モデル（1）ではYをX1、X2に回帰した。
+X1の係数の推定値は1.00となり、10％の有意水準でも有意に推定されていない。
+X2の係数の推定値は1.00となり、10％の有意水準でも有意に推定されていない。
+モデル（1）の自由度修正済み決定係数は0.50である。
+```
+
+对于中文输出：
+
+```python
+interpretation = interpret_result(regression_result, lang="zh")
+print(interpretation)
+```
+
+对于英文输出：
+
+```python
+interpretation = interpret_result(regression_result, lang="en")
+print(interpretation)
+```
+
+---
+
 ## 使用示例
 
 ```python
 import pandas as pd
-from regmonkey.stats import get_dummies, regress, add_footer
+from regmonkey.stats import get_dummies, regress, interpret_result, add_footer
 
 # 加载数据
 data = pd.DataFrame({
-    "X1": [1, 2, 3],
-    "X2": [4, 5, 6],
-    "Y": [7, 8, 9],
-    "Category": ["A", "B", "A"]
+    "X1": [1, 2, 3, 4, 5],
+    "X2": [2, 3, 4, 5, 6],
+    "Y": [3, 5, 7, 9, 11],
+    "Category": ["A", "B", "A", "B", "A"]
 })
 
 # 创建虚拟变量
 data_with_dummies = get_dummies(data, columns=["Category"])
 
-# 执行带有对数、幂和交互项的回归（使用英语键）
+# 执行回归分析
 variables = [
-    {"y": "Y", "X": ["X1", "X2", "log(X1)", "X2**2", "X1:X2"]}
+    {"被解释变量": "Y", "解释变量": ["X1", "X2"]},
+    {"被解释变量": "Y", "解释变量": ["X1", "X2", "log(X1)", "X2**2"]}
 ]
-df_processed, summary_result, regression_result = regress(variables, data_with_dummies, lang="en")
+df_processed, summary_result, regression_result = regress(variables, data_with_dummies, lang="zh")
+
+# 解释回归结果
+interpretation = interpret_result(regression_result, lang="zh")
+print(interpretation)
 
 # 将回归结果保存到 Excel 并添加脚注
-regression_result.to_excel("regression_results.xlsx", index=False)
-add_footer("regression_results.xlsx", "注：回归结果包括对数、幂和交互项。")
+regression_result.to_excel("regression_results.xlsx", index=True)
+add_footer("regression_results.xlsx", "注：回归结果包括对数、幂和交互项。标准误差显示在括号内。")
 
 # 将汇总统计量保存到 Excel 并添加脚注
-summary_result.to_excel("summary_statistics.xlsx", index=False)
+summary_result.to_excel("summary_statistics.xlsx", index=True)
 add_footer("summary_statistics.xlsx", "注：回归分析中使用的所有变量的汇总统计量。")
+
+# 将解释结果保存到文本文件
+with open("interpretation.txt", "w", encoding="utf-8") as f:
+    f.write(interpretation)
 ```
+
+更详细的使用示例，请参阅 `examples` 目录下的 `example.py`。
