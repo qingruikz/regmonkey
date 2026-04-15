@@ -106,7 +106,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 
 ---
 
-### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1")`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1", dynamic_format=True)`
 
 対数、べき乗、交互作用項をサポートする回帰分析を実行します。
 
@@ -130,6 +130,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
   - "HC2"：マックイナンの標準誤差
   - "HC3"：デビッドソン・マックキノンの標準誤差
   - "nonrobust"：通常の標準誤差
+- `dynamic_format` (bool)：`True` の場合、有効数字を保持するために小数点以下の桁数を動的に調整します（デフォルト：`True`）。変数のスケールが大きく異なる場合に有用です。例：`decimal_places=2` のとき、係数 0.000234 は "0.00" ではなく "0.00023" と表示されます。固定小数桁数にしたい場合は `False` に設定します。
 
 **注意**：デフォルト（`lang` が指定されていない場合）では、出力は日本語になります。
 
@@ -183,6 +184,9 @@ df_processed, summary_result, regression_result = regress(variables_en, data_wit
 
 # 中国語出力で回帰を実行
 df_processed, summary_result, regression_result = regress(variables_zh, data_with_dummies, lang="zh")
+
+# 固定小数桁数で回帰を実行（動的フォーマットを無効化）
+df_processed, summary_result, regression_result = regress(variables_ja, data_with_dummies, dynamic_format=False)
 
 # 結果を表示
 print(regression_result)

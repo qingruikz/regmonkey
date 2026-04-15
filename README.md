@@ -106,7 +106,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 
 ---
 
-### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1")`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1", dynamic_format=True)`
 
 Performs regression analysis with support for log, power, and interaction terms.
 
@@ -130,6 +130,7 @@ Performs regression analysis with support for log, power, and interaction terms.
   - "HC2": MacKinnon's standard errors
   - "HC3": Davidson-MacKinnon's standard errors
   - "nonrobust": Conventional standard errors
+- `dynamic_format` (bool): When `True`, dynamically adjusts decimal places to preserve significant digits (default: `True`). Useful when variables have very different scales, e.g. a coefficient of 0.000234 will display as "0.00023" instead of "0.00" with `decimal_places=2`. Set to `False` to use fixed decimal places.
 
 **Note**: By default (when `lang` is not specified), the output will be in Japanese.
 
@@ -184,6 +185,9 @@ df_processed, summary_result, regression_result = regress(variables_en, data_wit
 # Perform regression with Chinese output
 df_processed, summary_result, regression_result = regress(variables_zh, data_with_dummies, lang="zh")
 
+# Perform regression with fixed decimal places (disabling dynamic formatting)
+df_processed, summary_result, regression_result = regress(variables_en, data_with_dummies, dynamic_format=False)
+
 # Print results
 print(regression_result)
 ```
@@ -197,6 +201,7 @@ In this example:
 - `X1:X2` computes the interaction between `X1` and `X2`.
 - Dummy variables for `Category` are automatically created using `get_dummies`.
 - The output labels (e.g., "観測数"/"N"/"样本数") will match the language specified by the `lang` parameter.
+- By default (`dynamic_format=True`), very small coefficients are displayed with enough decimal places to show meaningful digits, instead of being rounded to "0.00".
 
 ---
 

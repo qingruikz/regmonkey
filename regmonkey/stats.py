@@ -4,6 +4,7 @@ import statsmodels.formula.api as smf
 import numpy as np
 import pandas as pd
 import re
+import math
 
 # 推定結果のスタイルを変更するためのモジュール
 from statsmodels.iolib.summary2 import summary_col
@@ -184,7 +185,71 @@ def add_if_unique(var, unique_vars):
         unique_vars.append(var)
 
 
-def regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1"):
+def _format_number_dynamic(num, decimal_places):
+    """小数位数を動的に調整し、少なくとも decimal_places 桁の有効数字を表示する。
+
+    例（decimal_places=2）：
+        0.000234 → "0.00023"    （固定2桁だと "0.00" になってしまう）
+        0.34     → "0.34"
+        1234.5   → "1234.50"
+    """
+    if num == 0:
+        return f"{num:.{decimal_places}f}"
+
+    abs_num = abs(num)
+
+    if abs_num >= 1:
+        return f"{num:.{decimal_places}f}"
+
+    first_nonzero_pos = -math.floor(math.log10(abs_num))
+    needed_places = first_nonzero_pos + decimal_places - 1
+    return f"{num:.{max(needed_places, decimal_places)}f}"
+
+
+def _reformat_cell(cell_str, decimal_places):
+    """summary_col が出力したセル文字列を動的小数位数で再フォーマットする。
+
+    星印（***）や標準誤差の括弧を保持したまま数値部分だけを再フォーマットする。
+    整数値（観測数など）はそのまま返す。
+    """
+    if pd.isna(cell_str):
+        return cell_str
+
+    cell_str = str(cell_str).strip()
+    if cell_str == "":
+        return cell_str
+
+    stars = ""
+    clean = cell_str
+    while clean.endswith("*"):
+        stars = "*" + stars
+        clean = clean[:-1]
+    clean = clean.strip()
+
+    is_se = clean.startswith("(") and clean.endswith(")")
+    if is_se:
+        clean = clean[1:-1].strip()
+
+    try:
+        num = float(clean)
+    except ValueError:
+        return cell_str
+
+    if "." not in clean and num == int(num):
+        return cell_str
+
+    formatted = _format_number_dynamic(num, decimal_places)
+
+    if is_se:
+        formatted = f"({formatted})"
+
+    return formatted + stars
+
+
+def regress(
+    variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1",
+    dynamic_format=True,
+):
     """回帰分析を行うための関数
 
     Args:
@@ -205,6 +270,8 @@ def regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1"):
             - "HC2": マックイナンの標準誤差
             - "HC3": デビッドソン・マックキノンの標準誤差
             - "nonrobust": 通常の標準誤差
+        dynamic_format (bool): Trueの場合、小数位数を動的に調整して有効数字を保持する
+            （デフォルト: True）。例：0.000234 → "0.00023"（decimal_places=2のとき）
 
     Returns:
         tuple: (処理済みデータフレーム, 記述統計量, 回帰結果テーブル)
@@ -294,14 +361,20 @@ def regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1"):
     regressor_order = [var["formula"] for var in exp_list] + ["Intercept"]
 
     # 回帰分析
+    float_fmt = "%.10f" if dynamic_format else f"%.{decimal_places}f"
     df_result = summary_col(
         models,
         regressor_order=regressor_order,
-        float_format=f"%.{decimal_places}f",
+        float_format=float_fmt,
         model_names=model_names,
         info_dict={labels[lang]["nobs"]: lambda x: str(int(x.nobs))},
         stars=True,
     ).tables[0]
+
+    if dynamic_format:
+        df_result = df_result.map(
+            lambda cell: _reformat_cell(cell, decimal_places)
+        )
 
     # 変数名の変更
     rename_dict = {var["formula"]: var["label"] for var in exp_list}

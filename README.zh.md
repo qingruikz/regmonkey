@@ -106,7 +106,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
 
 ---
 
-### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1")`
+### `regress(variables_dicts, df, decimal_places=2, lang="ja", cov_type="HC1", dynamic_format=True)`
 
 执行支持对数、幂和交互项的回归分析。
 
@@ -130,6 +130,7 @@ summary_stats = summary(df, ["X1", "X2"], lang="zh")
   - "HC2"：麦金农标准误差
   - "HC3"：戴维森-麦金农标准误差
   - "nonrobust"：常规标准误差
+- `dynamic_format` (bool)：为 `True` 时，动态调整小数位数以保留有效数字（默认：`True`）。当变量的取值范围差异很大时非常有用。例如：`decimal_places=2` 时，系数 0.000234 将显示为 "0.00023" 而非 "0.00"。如需使用固定小数位数，请设为 `False`。
 
 **注意**：默认情况下（未指定 `lang` 时），输出将为日语。
 
@@ -183,6 +184,9 @@ df_processed, summary_result, regression_result = regress(variables_en, data_wit
 
 # 使用中文输出执行回归
 df_processed, summary_result, regression_result = regress(variables_zh, data_with_dummies, lang="zh")
+
+# 使用固定小数位数执行回归（禁用动态格式）
+df_processed, summary_result, regression_result = regress(variables_zh, data_with_dummies, dynamic_format=False)
 
 # 打印结果
 print(regression_result)
